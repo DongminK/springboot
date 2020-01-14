@@ -24,4 +24,6 @@ public class UndertowController {
 		logger.info("TEST MESSAGE - " + sessionId);
 		return "Hello undertow world:" + port + " - " + sessionId;
 	}
+	
+	
 }
