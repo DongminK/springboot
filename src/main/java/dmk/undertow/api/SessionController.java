@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import dmk.undertow.UndertowApplication;
 import dmk.undertow.security.login.LoginService;
 import dmk.undertow.security.login.SessionBinder;
+import springfox.documentation.annotations.ApiIgnore;
 
 @RestController
 public class SessionController {
@@ -38,8 +39,8 @@ public class SessionController {
 	LoginService loginService;
 
 	@RequestMapping(value = "/login", method = RequestMethod.POST)
-	public String login(HttpSession session, HttpServletRequest req, HttpServletResponse res,
-			@RequestBody String loginData) {
+	public String login(@ApiIgnore HttpSession session, @ApiIgnore HttpServletRequest req,
+			@ApiIgnore HttpServletResponse res, @RequestBody String loginData) {
 
 		String result = "Login";
 
@@ -48,7 +49,7 @@ public class SessionController {
 			String userId = jObj.getString("user_id");
 			String password = jObj.getString("password");
 
-			Authentication auth = sessionBinder.getAuth(userId);
+			Authentication auth = sessionBinder.getAuthByUserId(userId);
 
 			if (auth == null) {
 				logger.info("[LOGIN] Auth is null");
@@ -76,13 +77,14 @@ public class SessionController {
 			}
 
 			// 사용자 인증 정보를 HTTP 세션에 넣어준다.
+			String token = loginService.generateToken(auth);
 			SecurityContextHolder.getContext().setAuthentication(auth);
 			session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
 					SecurityContextHolder.getContext());
-
-			// session-timeout 을 설정한다 : 0 or negative is unlimited
 			session.setAttribute("session_binder", sessionBinder);
-			session.setAttribute("X-Authorization", "");
+			session.setAttribute("X-Authorization", token);
+
+			result = session.getId() + " / " + token;
 
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
@@ -99,7 +101,7 @@ public class SessionController {
 	}
 
 	@RequestMapping(value = "/logout", method = RequestMethod.POST)
-	public String logout(HttpSession session) throws Exception {
+	public String logout(@ApiIgnore HttpSession session) throws Exception {
 
 		String result = "Logout";
 

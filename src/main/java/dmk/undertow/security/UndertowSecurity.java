@@ -13,8 +13,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import dmk.undertow.security.login.LoginService;
+import dmk.undertow.security.login.SessionFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -25,8 +27,9 @@ public class UndertowSecurity extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.csrf().disable().authorizeRequests().antMatchers("/login").permitAll().anyRequest().authenticated().and()
-				.logout().permitAll().invalidateHttpSession(true);
+		http.csrf().disable().authorizeRequests().antMatchers("/login", "/swagger*/**", "/webjars*/**", "/v2/api-docs")
+				.permitAll().anyRequest().authenticated().and()
+				.addFilterAfter(sessionFilter(), BasicAuthenticationFilter.class).logout().permitAll();
 	}
 
 	@Autowired
@@ -53,6 +56,14 @@ public class UndertowSecurity extends WebSecurityConfigurerAdapter {
 	@Override
 	public AuthenticationManager authenticationManagerBean() throws Exception {
 		return super.authenticationManagerBean();
+	}
+
+	@Bean
+	SessionFilter sessionFilter() throws Exception {
+		SessionFilter sessionFilter = new SessionFilter();
+		sessionFilter.setAuthenticationManager(authenticationManagerBean());
+
+		return sessionFilter;
 	}
 
 	@Bean
