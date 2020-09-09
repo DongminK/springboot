@@ -12,7 +12,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import dmk.undertow.UndertowApplication;
 import dmk.undertow.security.login.LoginService;
 import dmk.undertow.security.login.SessionBinder;
+import dmk.undertow.security.login.user.UserInfo;
 import springfox.documentation.annotations.ApiIgnore;
 
 @RestController
@@ -53,17 +53,20 @@ public class SessionController {
 
 			if (auth == null) {
 				logger.info("[LOGIN] Auth is null");
-				User user = (User) loginService.loadUserByUsername(userId);
+				UserInfo userInfo = (UserInfo) loginService.loadUserByUsername(userId);
 
-				if (loginService.checkpassword(user, password)) {
+				if (loginService.checkpassword(userInfo, password)) {
 
 					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-							user.getUsername(), user.getPassword(), user.getAuthorities());
+							userInfo.getUsername(), userInfo.getPassword(), userInfo.getAuthorities());
 
 					if (!authToken.isAuthenticated())
 						authToken.setAuthenticated(true);
 
-					authToken.setDetails(user);
+					// 로그인한 사용자의 IP를 설정한다.
+					userInfo.setIpAddr(req.getRemoteAddr());
+
+					authToken.setDetails(userInfo);
 					auth = authenticationManager.authenticate(authToken);
 
 				} else {
@@ -83,6 +86,12 @@ public class SessionController {
 					SecurityContextHolder.getContext());
 			session.setAttribute("session_binder", sessionBinder);
 			session.setAttribute("X-Authorization", token);
+
+			// 인증 세션을 가져와 새로운 쿠키 생성 (HTTP <-> HTTPS 상호 세션 처리)
+			/*
+			 * Cookie k = new Cookie("JSESSIONID", req.getSession().getId());
+			 * k.setPath(req.getContextPath()); res.addCookie(k);
+			 */
 
 			result = session.getId() + " / " + token;
 

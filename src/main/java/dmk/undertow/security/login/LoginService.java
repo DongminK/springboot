@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -23,6 +22,8 @@ import org.springframework.security.jwt.Jwt;
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.jwt.crypto.sign.MacSigner;
 import org.springframework.stereotype.Service;
+
+import dmk.undertow.security.login.user.UserInfo;
 
 @Service
 public class LoginService implements UserDetailsService {
@@ -45,7 +46,7 @@ public class LoginService implements UserDetailsService {
 			authorities.add(new SimpleGrantedAuthority(Role.MEMBER.getValue()));
 		}
 
-		return new User(username, password, authorities);
+		return new UserInfo(username, password, authorities);
 	}
 
 	public boolean checkpassword(UserDetails userDetails, String userPw) throws Exception {
@@ -56,22 +57,22 @@ public class LoginService implements UserDetailsService {
 		return false;
 	}
 
-	public User auth(Authentication auth) {
+	public UserInfo auth(Authentication auth) {
 		if (auth == null || !auth.isAuthenticated() || auth.getAuthorities().isEmpty()) {
 			return null;
 		}
 
-		User user = null;
+		UserInfo userInfo = null;
 		try {
 			Object detail = auth.getDetails();
-			if (detail instanceof User) {
-				user = (User) detail;
+			if (detail instanceof UserInfo) {
+				userInfo = (UserInfo) detail;
 			}
 		} catch (Exception e) {
 			logger.error("", e);
 		}
 
-		return user;
+		return userInfo;
 	}
 
 	public String generateToken(Authentication auth) throws IOException, NoSuchAlgorithmException {

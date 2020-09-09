@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,9 +28,13 @@ public class UndertowSecurity extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.csrf().disable().authorizeRequests().antMatchers("/login", "/swagger*/**", "/webjars*/**", "/v2/api-docs")
-				.permitAll().anyRequest().authenticated().and()
-				.addFilterAfter(sessionFilter(), BasicAuthenticationFilter.class).logout().permitAll();
+
+		http.csrf().disable().sessionManagement().maximumSessions(-1).maxSessionsPreventsLogin(false).and()
+				.sessionCreationPolicy(SessionCreationPolicy.NEVER).and().authorizeRequests()
+				.antMatchers("/login", "/swagger*/**", "/webjars*/**", "/v2/api-docs", "/collectd", "/telegraf", "/scouter").permitAll().anyRequest()
+				.authenticated().and().addFilterAfter(sessionFilter(), BasicAuthenticationFilter.class)
+				.addFilterAfter(new CORSFilter(), SessionFilter.class);
+
 	}
 
 	@Autowired

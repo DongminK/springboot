@@ -13,9 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
+
+import dmk.undertow.security.login.user.UserInfo;
 
 public class SessionFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -47,9 +48,11 @@ public class SessionFilter extends AbstractAuthenticationProcessingFilter {
 
 			if (auth != null) {
 
-				User user = loginService.auth(auth);
+				UserInfo user = loginService.auth(auth);
+				String remoteIpAddr = request.getRemoteAddr();
 
-				if (user != null && user.isAccountNonExpired()) {
+				// 사용자존재여부, 세션만료여부, IPAddr Check
+				if (user != null && user.isAccountNonExpired() && remoteIpAddr.compareTo(user.getIpAddr()) == 0) {
 					return getAuthenticationManager().authenticate(auth);
 				}
 			}
